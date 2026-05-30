@@ -1,6 +1,10 @@
 import os
+import sys
 
-from graphical_lp_2d import Constraint2D, plot_lp_2d
+# Thêm thư mục gốc vào sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from Graphical.graphical_lp_2d import Constraint2D, plot_lp_2d
 
 
 def assert_close_float(a: float, b: float, tol: float = 1e-7):

@@ -1,4 +1,10 @@
-from Code.Simplex.simplex_dictionary_solver import Constraint, SimplexDictionarySolver, fmt
+import os
+import sys
+
+# Thêm thư mục gốc chứa thư mục Simplex vào sys.path để Python nhận diện được module Simplex
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from Simplex.simplex_dictionary_solver import Constraint, SimplexDictionarySolver, fmt
 
 
 def print_result(res):

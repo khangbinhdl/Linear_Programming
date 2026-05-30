@@ -8,7 +8,13 @@ import random
 import numpy as np
 from scipy.optimize import linprog
 
-from simplex_dictionary_solver import Constraint, SimplexDictionarySolver, fmt
+import os
+import sys
+
+# Thêm thư mục gốc vào sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from Simplex.simplex_dictionary_solver import Constraint, SimplexDictionarySolver, fmt
 
 
 ObjectiveSense = Literal["min", "max"]
