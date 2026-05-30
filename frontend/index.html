@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quy Hoạch Tuyến Tính - Pro Solver</title>
+    <!-- Dùng Bootstrap để giao diện chuẩn chỉnh, chuyên nghiệp -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-light">
+
+<div class="container my-5">
+    <div class="text-center mb-4">
+        <h1 class="display-5 fw-bold text-primary">Phần Mềm Giải Quy Hoạch Tuyến Tính</h1>
+        <p class="lead text-muted">Hỗ trợ thuật toán Simplex và Phương pháp Đồ họa 2D</p>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="simplex-tab" data-bs-toggle="tab" data-bs-target="#simplex" type="button" role="tab" aria-controls="simplex" aria-selected="true">
+                📐 Phương Pháp Simplex
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="graphical-tab" data-bs-toggle="tab" data-bs-target="#graphical" type="button" role="tab" aria-controls="graphical" aria-selected="false">
+                📈 Phương Pháp Hình Học (2D)
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tabs Content -->
+    <div class="tab-content" id="myTabContent">
+        
+        <!-- ================= TAB 1: SIMPLEX ================= -->
+        <div class="tab-pane fade show active" id="simplex" role="tabpanel" aria-labelledby="simplex-tab">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Số lượng biến:</label>
+                            <input type="number" class="form-control" id="numVarsS" value="2" min="1" max="10" onchange="renderSimplexInputs()">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Số lượng ràng buộc:</label>
+                            <input type="number" class="form-control" id="numConsS" value="2" min="1" max="20" onchange="renderSimplexInputs()">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Mục tiêu:</label>
+                            <select class="form-select" id="objSenseS">
+                                <option value="max">Maximize (Max)</option>
+                                <option value="min">Minimize (Min)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Quy tắc rẽ nhánh:</label>
+                            <select class="form-select" id="pivotRuleS">
+                                <option value="bland">Bland's Rule</option>
+                                <option value="dantzig">Dantzig's Rule</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold text-secondary mb-3">Hàm mục tiêu (Z)</h5>
+                    <div id="objInputsS" class="d-flex flex-wrap align-items-center gap-2 mb-4">
+                        <!-- Render by JS -->
+                    </div>
+
+                    <h5 class="fw-bold text-secondary mb-3">Hệ ràng buộc</h5>
+                    <div id="conInputsS" class="d-flex flex-column gap-3 mb-4">
+                        <!-- Render by JS -->
+                    </div>
+
+                    <hr>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary fw-bold" onclick="randomizeSimplex()">🎲 Trộn số liệu</button>
+                        <button class="btn btn-primary fw-bold px-4" id="btnSolveSimplex" onclick="solveSimplex()">🚀 Giải Simplex</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kết quả Simplex -->
+            <div id="resultSectionS" class="card shadow-sm border-0" style="display: none;">
+                <div class="card-header bg-success text-white fw-bold fs-5">
+                    Kết quả thuật toán
+                </div>
+                <div class="card-body p-4">
+                    <h4 class="mb-3">Trạng thái: <span id="statusTextS" class="badge bg-primary"></span></h4>
+                    <h5 id="optValueTextS" class="text-danger fw-bold mb-4"></h5>
+                    <div id="stepsContainerS">
+                        <!-- Render by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= TAB 2: GRAPHICAL ================= -->
+        <div class="tab-pane fade" id="graphical" role="tabpanel" aria-labelledby="graphical-tab">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body p-4">
+                    <div class="alert alert-info">
+                        <strong>Lưu ý:</strong> Phương pháp hình học chỉ áp dụng cho bài toán đúng 2 biến (x<sub>1</sub>, x<sub>2</sub>).
+                    </div>
+                    
+                    <div class="row g-3 mb-4 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Số lượng ràng buộc:</label>
+                            <input type="number" class="form-control" id="numConsG" value="3" min="1" max="20" onchange="renderGraphicalInputs()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Mục tiêu:</label>
+                            <select class="form-select" id="objSenseG">
+                                <option value="max">Maximize (Max)</option>
+                                <option value="min">Minimize (Min)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold text-secondary mb-3">Hàm mục tiêu (Z)</h5>
+                    <div class="d-flex align-items-center gap-2 mb-4">
+                        <span class="fw-bold fs-5">Z = </span>
+                        <input type="number" class="form-control w-auto input-number" id="g_c1" value="2">
+                        <span class="math-var">x<sub>1</sub></span>
+                        <span class="fw-bold">+</span>
+                        <input type="number" class="form-control w-auto input-number" id="g_c2" value="3">
+                        <span class="math-var">x<sub>2</sub></span>
+                    </div>
+
+                    <h5 class="fw-bold text-secondary mb-3">Hệ ràng buộc</h5>
+                    <div id="conInputsG" class="d-flex flex-column gap-3 mb-4">
+                        <!-- Render by JS -->
+                    </div>
+
+                    <hr>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary fw-bold" onclick="randomizeGraphical()">🎲 Trộn số liệu</button>
+                        <button class="btn btn-success fw-bold px-4" id="btnSolveGraphical" onclick="solveGraphical()">📈 Vẽ Đồ Thị</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kết quả Graphical -->
+            <div id="resultSectionG" class="card shadow-sm border-0" style="display: none;">
+                <div class="card-header bg-success text-white fw-bold fs-5">
+                    Kết quả Hình học
+                </div>
+                <div class="card-body p-4 text-center">
+                    <h4 class="mb-3 text-start">Trạng thái: <span id="statusTextG" class="badge bg-primary"></span></h4>
+                    <h5 id="optValueTextG" class="text-danger fw-bold mb-4 text-start"></h5>
+                    
+                    <!-- Nơi chứa ảnh đồ thị -->
+                    <div class="graph-container p-3 border rounded bg-white d-inline-block">
+                        <img id="graphImage" src="" alt="Đồ thị bài toán" class="img-fluid" style="max-height: 600px; display: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,16 +1,10 @@
 # Linear Programming Solver
 
-Dự án này gồm hai phần chính:
+Dự án này gồm ba phần chính:
 
-1. `Simplex/simplex_dictionary_solver.py`  
-   Giải bài toán quy hoạch tuyến tính bằng **phương pháp đơn hình dạng từ vựng**.  
-   Hỗ trợ:
-    - Dantzig's Simplex Algorithm
-    - Bland's Rule
-    - Two-Phase Simplex Method
-
-2. `Graphical/graphical_lp_2d.py`  
-   Giải và minh họa bài toán quy hoạch tuyến tính **2 biến** bằng **phương pháp hình học**, vẽ miền chấp nhận được, đường mục tiêu, vector pháp tuyến và nghiệm tối ưu.
+1. **Giao diện Web (Custom UI):** Ứng dụng web trực quan giúp nhập bài toán, tùy chọn phương pháp và xem chi tiết từng bước giải. Được xây dựng bằng HTML/CSS/JS thuần túy.
+2. `Simplex/simplex_dictionary_solver.py`: Giải bài toán bằng **phương pháp đơn hình dạng từ vựng** (Hỗ trợ 2 pha, luật Bland/Dantzig).
+3. `Graphical/graphical_lp_2d.py`: Giải và minh họa bài toán **2 biến** bằng **phương pháp hình học**.
 
 ---
 
@@ -18,24 +12,42 @@ Dự án này gồm hai phần chính:
 
 ```text
 .
+├── backend/                   # Máy chủ xử lý thuật toán (FastAPI)
+│   └── main.py
+├── frontend/                  # Giao diện web hiển thị siêu xịn
+│   ├── index.html
+│   ├── script.js
+│   └── style.css
 ├── Graphical/
 │   └── graphical_lp_2d.py
-│
 ├── Simplex/
 │   └── simplex_dictionary_solver.py
-│
+├── run.bat                    # Script chạy nhanh ứng dụng Web
 ├── README.md
 └── requirements.txt
 ```
 
-## 2. Cài đặt
-Cài thư viện
+## 2. Cài đặt và Khởi chạy Giao diện Web
+
+**Cách nhanh nhất (Windows):**
+Nhấp đúp chuột vào file `run.bat`. Máy tính sẽ tự động cài đặt thư viện cần thiết và khởi động máy chủ. 
+Sau đó, mở trình duyệt web và truy cập vào địa chỉ: [http://localhost:8000/](http://localhost:8000/)
+
+**Cách khởi chạy thủ công (Terminal):**
+1. Cài đặt thư viện:
 ```bash
 pip install -r requirements.txt
 ```
+2. Khởi động máy chủ:
+```bash
+cd backend
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
 
+---
 
-## 3. Simplex Dictionary Solver
+## 3.Simplex Dictionary Solver
+
 
 **File chính**: `Simplex/simplex_dictionary_solver.py`
 
@@ -379,4 +391,4 @@ Hàm `plot_lp_2d()` trả về dictionary.
     "axis": ax,
     "legend_axis": legend_ax,
 }
-```
+```

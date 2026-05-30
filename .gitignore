@@ -11,3 +11,4 @@ venv/
 env/
 .idea/
 .vscode/
+temp_graph.png

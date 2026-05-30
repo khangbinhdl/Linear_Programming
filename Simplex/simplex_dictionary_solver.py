@@ -111,7 +111,7 @@ class SimplexDictionarySolver:
         need_phase1 = self._build_initial_dictionary_with_x0_phase1(self.canon)
 
         if self.verbose:
-            print("\n=== DẠNG CHUẨN ===")
+            print("\nDẠNG CHUẨN")
             print("Hàm mục tiêu đã được chuyển về dạng: min z")
             print("Tất cả ràng buộc đã được chuyển về dạng <=.")
             print("Tất cả biến đã được chuyển về dạng không âm.")
@@ -125,7 +125,7 @@ class SimplexDictionarySolver:
                 return self._result("infeasible", None, None)
         else:
             if self.verbose:
-                print("\nKhông có RHS âm.")
+                print("\nKhông có hằng số vế phải âm.")
                 print("Không cần Pha I.")
 
         self.phase = "Pha II"
@@ -326,11 +326,11 @@ class SimplexDictionarySolver:
         leaving = self._choose_phase1_first_leaving()
 
         if self.verbose:
-            print("\n[Pha I] Pivot bắt buộc đầu tiên")
+            print("\n[Pha I] Phép xoay bắt buộc đầu tiên")
             print(f"Biến vào: {entering}")
             print(f"Biến ra:  {leaving}")
             print(
-                "Lý do: chọn hàng có RHS âm nhất "
+                "Lý do: chọn hàng có hằng số vế phải âm nhất "
                 f"= {fmt(self.rows[leaving].const)}"
             )
 
@@ -341,7 +341,7 @@ class SimplexDictionarySolver:
         self._set_objective({"x0": Fraction(1)})
 
         if self.verbose:
-            self._print_dictionary("Từ vựng Pha I sau pivot bắt buộc với x0")
+            self._print_dictionary("Từ vựng Pha I sau phép xoay bắt buộc với x0")
 
         status = self._simplex_minimize()
 
@@ -427,7 +427,7 @@ class SimplexDictionarySolver:
 
             if leaving is None:
                 if self.verbose:
-                    print(f"\n[{self.phase}] Không giới nội theo biến {entering}.")
+                    print(f"\n[{self.phase}] Bài toán không giới hạn theo biến {entering}.")
 
                 return "unbounded"
 
@@ -441,7 +441,7 @@ class SimplexDictionarySolver:
             self._pivot(entering, leaving)
 
             if self.verbose:
-                self._print_dictionary(f"Từ vựng sau pivot {self.iteration}")
+                self._print_dictionary(f"Từ vựng sau phép xoay {self.iteration}")
 
     def _choose_entering(self) -> Optional[str]:
         """
@@ -491,7 +491,7 @@ class SimplexDictionarySolver:
         a_e = old_row.coeffs[entering]
 
         if a_e == 0:
-            raise ZeroDivisionError("Pivot không hợp lệ: hệ số pivot bằng 0.")
+            raise ZeroDivisionError("Phép xoay không hợp lệ: hệ số xoay bằng 0.")
 
         new_coeffs: Dict[str, Fraction] = {}
         new_const = -old_row.const / a_e
@@ -559,9 +559,8 @@ class SimplexDictionarySolver:
             )
 
     def _print_dictionary(self, title: str):
-        print(f"\n--- {title} ---")
+        print(f"\n{title}")
         print("z =", self._row_expr_to_str(self.obj))
-        print("--------")
 
         for basic in self.basis:
             print(f"{basic} = {self._row_expr_to_str(self.rows[basic])}")
@@ -665,7 +664,7 @@ class SimplexDictionarySolver:
         if not self.verbose:
             return
 
-        print("\n================ KẾT LUẬN ================")
+        print("\nKẾT LUẬN")
 
         if status == "optimal":
             print("Trạng thái: tối ưu")
@@ -699,8 +698,6 @@ class SimplexDictionarySolver:
 
         else:
             print(f"Trạng thái không xác định: {status}")
-
-        print("==========================================")
 
     def _result(self, status: str, point, value):
         return {
