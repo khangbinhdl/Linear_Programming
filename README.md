@@ -14,7 +14,7 @@ Dự án này gồm ba phần chính:
 .
 ├── backend/                   # Máy chủ xử lý thuật toán (FastAPI)
 │   └── main.py
-├── frontend/                  # Giao diện web hiển thị siêu xịn
+├── frontend/                  # Giao diện web hiển thị 
 │   ├── index.html
 │   ├── script.js
 │   └── style.css
@@ -391,4 +391,4 @@ Hàm `plot_lp_2d()` trả về dictionary.
     "axis": ax,
     "legend_axis": legend_ax,
 }
-```
+```
