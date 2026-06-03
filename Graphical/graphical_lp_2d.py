@@ -5,8 +5,8 @@ from fractions import Fraction
 from math import gcd
 from typing import List, Literal, Optional, Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
+import plotly.graph_objects as go
 
 
 Number = int | float | str | Fraction
@@ -27,12 +27,14 @@ class Constraint2D:
 def F(x: Number) -> Fraction:
     if isinstance(x, Fraction):
         return x
+
     return Fraction(str(x))
 
 
 def fmt(q: Fraction) -> str:
     if q.denominator == 1:
         return str(q.numerator)
+
     return f"{q.numerator}/{q.denominator}"
 
 
@@ -40,13 +42,13 @@ def fmt_float(x: float, digits: int = 4) -> str:
     if abs(x) < 1e-10:
         x = 0.0
 
-    s = f"{x:.{digits}g}"
-    return s
+    return f"{x:.{digits}g}"
 
 
 def lcm_int(a: int, b: int) -> int:
     if a == 0:
         return abs(b)
+
     if b == 0:
         return abs(a)
 
@@ -64,14 +66,6 @@ def lcm_list(values: List[int]) -> int:
 
 
 def objective_lcm_value(c: Tuple[Number, Number]) -> Fraction:
-    """
-    Tạo giá trị z mẫu:
-
-        z = |lcm(c1, c2)|
-
-    Nếu c có phân số thì quy đồng trước rồi lấy lcm của tử số.
-    """
-
     c1 = F(c[0])
     c2 = F(c[1])
 
@@ -88,17 +82,17 @@ def objective_lcm_value(c: Tuple[Number, Number]) -> Fraction:
     return Fraction(z0)
 
 
-def eval_constraint(cons: Constraint2D, x: float, y: float) -> float:
-    return float(F(cons.a)) * x + float(F(cons.b)) * y
+def eval_constraint(cons: Constraint2D, x1: float, x2: float) -> float:
+    return float(F(cons.a)) * x1 + float(F(cons.b)) * x2
 
 
 def satisfies_constraint(
     cons: Constraint2D,
-    x: float,
-    y: float,
+    x1: float,
+    x2: float,
     eps: float = 1e-9,
 ) -> bool:
-    lhs = eval_constraint(cons, x, y)
+    lhs = eval_constraint(cons, x1, x2)
     rhs = float(F(cons.rhs))
 
     if cons.sense == "<=":
@@ -115,11 +109,11 @@ def satisfies_constraint(
 
 def satisfies_all(
     constraints: List[Constraint2D],
-    x: float,
-    y: float,
+    x1: float,
+    x2: float,
     eps: float = 1e-9,
 ) -> bool:
-    return all(satisfies_constraint(cons, x, y, eps) for cons in constraints)
+    return all(satisfies_constraint(cons, x1, x2, eps) for cons in constraints)
 
 
 def line_intersection(
@@ -140,10 +134,10 @@ def line_intersection(
     if abs(det) <= eps:
         return None
 
-    x = (r1 * b2 - r2 * b1) / det
-    y = (a1 * r2 - a2 * r1) / det
+    x1 = (r1 * b2 - r2 * b1) / det
+    x2 = (a1 * r2 - a2 * r1) / det
 
-    return x, y
+    return x1, x2
 
 
 def add_bound_constraints(
@@ -152,25 +146,25 @@ def add_bound_constraints(
 ) -> List[Constraint2D]:
     out = list(constraints)
 
-    bx, by = bounds
+    bx1, bx2 = bounds
 
-    if bx == ">=0":
-        out.append(Constraint2D(1, 0, ">=", 0, "x >= 0"))
-    elif bx == "<=0":
-        out.append(Constraint2D(1, 0, "<=", 0, "x <= 0"))
-    elif bx == "free":
+    if bx1 == ">=0":
+        out.append(Constraint2D(1, 0, ">=", 0, "x1 >= 0"))
+    elif bx1 == "<=0":
+        out.append(Constraint2D(1, 0, "<=", 0, "x1 <= 0"))
+    elif bx1 == "free":
         pass
     else:
-        raise ValueError(f"Điều kiện dấu không hợp lệ cho x: {bx}")
+        raise ValueError(f"Điều kiện dấu không hợp lệ cho x1: {bx1}")
 
-    if by == ">=0":
-        out.append(Constraint2D(0, 1, ">=", 0, "y >= 0"))
-    elif by == "<=0":
-        out.append(Constraint2D(0, 1, "<=", 0, "y <= 0"))
-    elif by == "free":
+    if bx2 == ">=0":
+        out.append(Constraint2D(0, 1, ">=", 0, "x2 >= 0"))
+    elif bx2 == "<=0":
+        out.append(Constraint2D(0, 1, "<=", 0, "x2 <= 0"))
+    elif bx2 == "free":
         pass
     else:
-        raise ValueError(f"Điều kiện dấu không hợp lệ cho y: {by}")
+        raise ValueError(f"Điều kiện dấu không hợp lệ cho x2: {bx2}")
 
     return out
 
@@ -190,13 +184,13 @@ def find_feasible_vertices(
             if p is None:
                 continue
 
-            x, y = p
+            x1, x2 = p
 
-            if not np.isfinite(x) or not np.isfinite(y):
+            if not np.isfinite(x1) or not np.isfinite(x2):
                 continue
 
-            if satisfies_all(constraints, x, y, eps):
-                vertices.append((x, y))
+            if satisfies_all(constraints, x1, x2, eps):
+                vertices.append((x1, x2))
 
     unique: List[Tuple[float, float]] = []
 
@@ -207,8 +201,8 @@ def find_feasible_vertices(
     return unique
 
 
-def objective_value(c: Tuple[Number, Number], x: float, y: float) -> float:
-    return float(F(c[0])) * x + float(F(c[1])) * y
+def objective_value(c: Tuple[Number, Number], x1: float, x2: float) -> float:
+    return float(F(c[0])) * x1 + float(F(c[1])) * x2
 
 
 def sort_polygon_vertices(vertices: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
@@ -229,19 +223,6 @@ def choose_optimal_set(
     objective: ObjectiveSense,
     eps: float = 1e-8,
 ):
-    """
-    Tìm nghiệm tối ưu trên các đỉnh hữu hạn.
-
-    Nếu chỉ có một đỉnh tối ưu:
-        return kind = "single"
-
-    Nếu có ít nhất hai đỉnh tối ưu có cùng giá trị z:
-        return kind = "multiple"
-
-    Khi đó toàn bộ đoạn nối giữa hai đỉnh tối ưu kề nhau trên biên
-    cũng là nghiệm tối ưu.
-    """
-
     if not vertices:
         return {
             "kind": "none",
@@ -275,64 +256,46 @@ def choose_optimal_set(
 
 
 def constraint_label(cons: Constraint2D) -> str:
-    if cons.label is not None:
+    if cons.label is not None and cons.label.strip() != "":
         return cons.label
 
-    return f"{fmt(F(cons.a))}x + {fmt(F(cons.b))}y {cons.sense} {fmt(F(cons.rhs))}"
+    a = F(cons.a)
+    b = F(cons.b)
+    rhs = F(cons.rhs)
 
+    terms = []
 
-def point_on_line_near_center(
-    a: float,
-    b: float,
-    rhs: float,
-    center_x: float,
-    center_y: float,
-) -> Tuple[float, float]:
-    """
-    Tìm điểm trên đường thẳng:
+    if a != 0:
+        if a == 1:
+            terms.append("x1")
+        elif a == -1:
+            terms.append("-x1")
+        else:
+            terms.append(f"{fmt(a)}x1")
 
-        ax + by = rhs
+    if b != 0:
+        if b == 1:
+            terms.append("x2")
+        elif b == -1:
+            terms.append("-x2")
+        else:
+            terms.append(f"{fmt(b)}x2")
 
-    gần tâm hình vẽ nhất.
-    """
+    if not terms:
+        lhs = "0"
+    else:
+        lhs = terms[0]
 
-    normal = np.array([a, b], dtype=float)
-    center = np.array([center_x, center_y], dtype=float)
-    denom = float(np.dot(normal, normal))
+        for term in terms[1:]:
+            if term.startswith("-"):
+                lhs += f" - {term[1:]}"
+            else:
+                lhs += f" + {term}"
 
-    if denom <= 1e-12:
-        return center_x, center_y
-
-    signed_distance_factor = (np.dot(normal, center) - rhs) / denom
-    p = center - signed_distance_factor * normal
-
-    return float(p[0]), float(p[1])
+    return f"{lhs} {cons.sense} {fmt(rhs)}"
 
 
 def feasible_normal_direction(cons: Constraint2D) -> Optional[np.ndarray]:
-    """
-    Vector pháp tuyến chỉ về phía miền chấp nhận được.
-
-    Với:
-        ax + by <= c
-
-    miền chấp nhận được nằm theo hướng:
-
-        -(a, b)
-
-    Với:
-        ax + by >= c
-
-    miền chấp nhận được nằm theo hướng:
-
-        +(a, b)
-
-    Với:
-        ax + by = c
-
-    không có một phía duy nhất.
-    """
-
     a = float(F(cons.a))
     b = float(F(cons.b))
 
@@ -353,53 +316,152 @@ def feasible_normal_direction(cons: Constraint2D) -> Optional[np.ndarray]:
     return None
 
 
-def draw_arrow_segment(
-    ax,
-    start: Tuple[float, float],
-    direction: np.ndarray,
-    length: float,
-    label: Optional[str] = None,
-    linewidth: float = 1.1,
-    mutation_scale: int = 8,
-    alpha: float = 0.85,
-):
-    """
-    Vẽ mũi tên bằng điểm đầu và vector hướng.
-    Dùng annotate để tránh lỗi hình học khi dùng quiver.
-    """
+def point_on_line_near_center(
+    a: float,
+    b: float,
+    rhs: float,
+    center_x: float,
+    center_y: float,
+) -> Tuple[float, float]:
+    normal = np.array([a, b], dtype=float)
+    center = np.array([center_x, center_y], dtype=float)
+    denom = float(np.dot(normal, normal))
 
-    d = np.array(direction, dtype=float)
-    norm = np.linalg.norm(d)
+    if denom <= 1e-12:
+        return center_x, center_y
 
-    if norm <= 1e-12:
-        return
+    signed_distance_factor = (np.dot(normal, center) - rhs) / denom
+    p = center - signed_distance_factor * normal
 
-    d = d / norm
+    return float(p[0]), float(p[1])
 
-    x0, y0 = start
-    x1 = x0 + length * d[0]
-    y1 = y0 + length * d[1]
 
-    ax.annotate(
-        "",
-        xy=(x1, y1),
-        xytext=(x0, y0),
-        arrowprops=dict(
-            arrowstyle="->",
-            linewidth=linewidth,
-            mutation_scale=mutation_scale,
-            alpha=alpha,
-            shrinkA=0,
-            shrinkB=0,
-        ),
+def get_line_segment_in_box(
+    a: float,
+    b: float,
+    rhs: float,
+    x_min: float,
+    x_max: float,
+    y_min: float,
+    y_max: float,
+) -> Optional[Tuple[Tuple[float, float], Tuple[float, float]]]:
+    points: List[Tuple[float, float]] = []
+
+    if abs(b) > 1e-12:
+        for x in [x_min, x_max]:
+            y = (rhs - a * x) / b
+            if y_min - 1e-9 <= y <= y_max + 1e-9:
+                points.append((x, y))
+
+    if abs(a) > 1e-12:
+        for y in [y_min, y_max]:
+            x = (rhs - b * y) / a
+            if x_min - 1e-9 <= x <= x_max + 1e-9:
+                points.append((x, y))
+
+    unique: List[Tuple[float, float]] = []
+
+    for p in points:
+        if not any(np.linalg.norm(np.array(p) - np.array(q)) <= 1e-7 for q in unique):
+            unique.append(p)
+
+    if len(unique) < 2:
+        return None
+
+    return unique[0], unique[1]
+
+
+def collect_scale_points(
+    constraints: List[Constraint2D],
+    c: Tuple[Number, Number],
+    vertices: List[Tuple[float, float]],
+) -> List[Tuple[float, float]]:
+    points: List[Tuple[float, float]] = [(0.0, 0.0)]
+
+    for p in vertices:
+        if np.isfinite(p[0]) and np.isfinite(p[1]):
+            points.append(p)
+
+    n = len(constraints)
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            p = line_intersection(constraints[i], constraints[j])
+
+            if p is not None and np.isfinite(p[0]) and np.isfinite(p[1]):
+                points.append(p)
+
+    for cons in constraints:
+        a = float(F(cons.a))
+        b = float(F(cons.b))
+        rhs = float(F(cons.rhs))
+
+        if abs(a) > 1e-12:
+            points.append((rhs / a, 0.0))
+
+        if abs(b) > 1e-12:
+            points.append((0.0, rhs / b))
+
+    c1 = float(F(c[0]))
+    c2 = float(F(c[1]))
+    z0 = float(objective_lcm_value(c))
+
+    if abs(c1) > 1e-12:
+        points.append((z0 / c1, 0.0))
+
+    if abs(c2) > 1e-12:
+        points.append((0.0, z0 / c2))
+
+    clean_points = []
+
+    for x1, x2 in points:
+        if np.isfinite(x1) and np.isfinite(x2):
+            clean_points.append((x1, x2))
+
+    return clean_points
+
+
+def auto_equal_limits(
+    constraints: List[Constraint2D],
+    c: Tuple[Number, Number],
+    vertices: List[Tuple[float, float]],
+    scale_factor: float = 1.35,
+    min_radius: float = 5.0,
+) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+    points = collect_scale_points(
+        constraints=constraints,
+        c=c,
+        vertices=vertices,
     )
 
-    if label is not None:
-        ax.text(x1, y1, label)
+    if not points:
+        return (-10, 10), (-10, 10)
+
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+
+    x_min_raw = min(xs)
+    x_max_raw = max(xs)
+    y_min_raw = min(ys)
+    y_max_raw = max(ys)
+
+    cx = 0.5 * (x_min_raw + x_max_raw)
+    cy = 0.5 * (y_min_raw + y_max_raw)
+
+    half_x = 0.5 * (x_max_raw - x_min_raw)
+    half_y = 0.5 * (y_max_raw - y_min_raw)
+
+    radius = max(half_x, half_y, min_radius)
+    radius *= scale_factor
+
+    xlim = (cx - radius, cx + radius)
+    ylim = (cy - radius, cy + radius)
+
+    return xlim, ylim
 
 
-def draw_constraint_line(
-    ax,
+def add_constraint_trace(
+    fig: go.Figure,
     cons: Constraint2D,
     x_min: float,
     x_max: float,
@@ -411,20 +473,39 @@ def draw_constraint_line(
     rhs = float(F(cons.rhs))
     label = constraint_label(cons)
 
-    xs = np.linspace(x_min, x_max, 600)
+    segment = get_line_segment_in_box(a, b, rhs, x_min, x_max, y_min, y_max)
 
-    if abs(b) > 1e-12:
-        ys = (rhs - a * xs) / b
-        mask = (ys >= y_min - 1) & (ys <= y_max + 1)
+    if segment is None:
+        fig.add_trace(
+            go.Scatter(
+                x=[None],
+                y=[None],
+                mode="lines",
+                name=label,
+                line=dict(width=2),
+                showlegend=True,
+                hoverinfo="skip",
+            )
+        )
+        return
 
-        ax.plot(xs[mask], ys[mask], linewidth=1.1, label=label)
-    elif abs(a) > 1e-12:
-        x0 = rhs / a
-        ax.axvline(x0, linewidth=1.1, label=label)
+    p1, p2 = segment
+
+    fig.add_trace(
+        go.Scatter(
+            x=[p1[0], p2[0]],
+            y=[p1[1], p2[1]],
+            mode="lines",
+            name=label,
+            line=dict(width=2),
+            hovertemplate=f"{label}<extra></extra>",
+            showlegend=True,
+        )
+    )
 
 
-def draw_constraint_normal(
-    ax,
+def add_constraint_normal_arrow(
+    fig: go.Figure,
     cons: Constraint2D,
     x_min: float,
     x_max: float,
@@ -432,11 +513,6 @@ def draw_constraint_normal(
     y_max: float,
     arrow_length: float,
 ):
-    """
-    Vẽ vector pháp tuyến của ràng buộc.
-    Không đưa vector pháp tuyến vào legend.
-    """
-
     direction = feasible_normal_direction(cons)
 
     if direction is None:
@@ -446,25 +522,37 @@ def draw_constraint_normal(
     b = float(F(cons.b))
     rhs = float(F(cons.rhs))
 
-    cx = (x_min + x_max) / 2
-    cy = (y_min + y_max) / 2
+    cx = 0.5 * (x_min + x_max)
+    cy = 0.5 * (y_min + y_max)
 
-    px, py = point_on_line_near_center(a, b, rhs, cx, cy)
+    x0, y0 = point_on_line_near_center(a, b, rhs, cx, cy)
 
-    draw_arrow_segment(
-        ax=ax,
-        start=(px, py),
-        direction=direction,
-        length=arrow_length,
-        label=None,
-        linewidth=0.9,
-        mutation_scale=7,
-        alpha=0.65,
+    x1 = x0 + arrow_length * direction[0]
+    y1 = y0 + arrow_length * direction[1]
+
+    if not all(np.isfinite(v) for v in [x0, y0, x1, y1]):
+        return
+
+    fig.add_annotation(
+        x=x1,
+        y=y1,
+        ax=x0,
+        ay=y0,
+        xref="x",
+        yref="y",
+        axref="x",
+        ayref="y",
+        showarrow=True,
+        arrowhead=3,
+        arrowsize=1,
+        arrowwidth=1.3,
+        opacity=0.75,
+        text="",
     )
 
 
-def draw_objective_line_and_normal(
-    ax,
+def add_objective_line_and_arrow(
+    fig: go.Figure,
     c: Tuple[Number, Number],
     objective: ObjectiveSense,
     z0: Fraction,
@@ -477,36 +565,40 @@ def draw_objective_line_and_normal(
     c2 = float(F(c[1]))
     z_float = float(z0)
 
-    xs = np.linspace(x_min, x_max, 600)
-
-    if abs(c2) > 1e-12:
-        ys = (z_float - c1 * xs) / c2
-        mask = (ys >= y_min - 1) & (ys <= y_max + 1)
-
-        ax.plot(
-            xs[mask],
-            ys[mask],
-            linestyle="--",
-            linewidth=1.1,
-            label=f"Đường mục tiêu mẫu: z = {fmt(z0)}",
-        )
-    elif abs(c1) > 1e-12:
-        x0 = z_float / c1
-
-        ax.axvline(
-            x0,
-            linestyle="--",
-            linewidth=1.1,
-            label=f"Đường mục tiêu mẫu: z = {fmt(z0)}",
-        )
-    else:
+    if abs(c1) <= 1e-12 and abs(c2) <= 1e-12:
         raise ValueError("Vector hệ số hàm mục tiêu không được đồng thời bằng 0.")
 
-    # Đường mục tiêu:
-    #     c1*x + c2*y = z0
-    #
-    # Vector pháp tuyến đúng:
-    #     n = (c1, c2)
+    segment = get_line_segment_in_box(c1, c2, z_float, x_min, x_max, y_min, y_max)
+
+    label = f"Đường mục tiêu mẫu: z = {fmt(z0)}"
+
+    if segment is not None:
+        p1, p2 = segment
+
+        fig.add_trace(
+            go.Scatter(
+                x=[p1[0], p2[0]],
+                y=[p1[1], p2[1]],
+                mode="lines",
+                name=label,
+                line=dict(width=2, dash="dash"),
+                hovertemplate=f"{label}<extra></extra>",
+                showlegend=True,
+            )
+        )
+    else:
+        fig.add_trace(
+            go.Scatter(
+                x=[None],
+                y=[None],
+                mode="lines",
+                name=label,
+                line=dict(width=2, dash="dash"),
+                showlegend=True,
+                hoverinfo="skip",
+            )
+        )
+
     normal = np.array([c1, c2], dtype=float)
     norm = np.linalg.norm(normal)
 
@@ -517,32 +609,42 @@ def draw_objective_line_and_normal(
 
     if objective == "max":
         direction = normal
-        direction_text = "hướng tăng z"
     else:
         direction = -normal
-        direction_text = "hướng giảm z"
 
-    cx = (x_min + x_max) / 2
-    cy = (y_min + y_max) / 2
+    cx = 0.5 * (x_min + x_max)
+    cy = 0.5 * (y_min + y_max)
 
-    px, py = point_on_line_near_center(c1, c2, z_float, cx, cy)
+    x0, y0 = point_on_line_near_center(c1, c2, z_float, cx, cy)
 
-    arrow_length = 0.06 * max(x_max - x_min, y_max - y_min)
+    arrow_length = 0.07 * max(x_max - x_min, y_max - y_min)
 
-    draw_arrow_segment(
-        ax=ax,
-        start=(px, py),
-        direction=direction,
-        length=arrow_length,
-        label=direction_text,
-        linewidth=1.3,
-        mutation_scale=9,
-        alpha=0.9,
+    x1 = x0 + arrow_length * direction[0]
+    y1 = y0 + arrow_length * direction[1]
+
+    if not all(np.isfinite(v) for v in [x0, y0, x1, y1]):
+        return
+
+    fig.add_annotation(
+        x=x1,
+        y=y1,
+        ax=x0,
+        ay=y0,
+        xref="x",
+        yref="y",
+        axref="x",
+        ayref="y",
+        showarrow=True,
+        arrowhead=3,
+        arrowsize=1.2,
+        arrowwidth=2,
+        opacity=0.9,
+        text="",
     )
 
 
-def draw_optimal_objective_line(
-    ax,
+def add_optimal_objective_line(
+    fig: go.Figure,
     c: Tuple[Number, Number],
     z_star: float,
     x_min: float,
@@ -553,30 +655,90 @@ def draw_optimal_objective_line(
     c1 = float(F(c[0]))
     c2 = float(F(c[1]))
 
-    xs = np.linspace(x_min, x_max, 600)
+    segment = get_line_segment_in_box(c1, c2, z_star, x_min, x_max, y_min, y_max)
+    label = f"Đường mục tiêu tối ưu: z = {z_star:.4g}"
 
-    if abs(c2) > 1e-12:
-        ys = (z_star - c1 * xs) / c2
-        mask = (ys >= y_min - 1) & (ys <= y_max + 1)
-
-        ax.plot(
-            xs[mask],
-            ys[mask],
-            linewidth=1.4,
-            label=f"Đường mục tiêu tối ưu: z = {z_star:.4g}",
+    if segment is None:
+        fig.add_trace(
+            go.Scatter(
+                x=[None],
+                y=[None],
+                mode="lines",
+                name=label,
+                line=dict(width=3),
+                showlegend=True,
+                hoverinfo="skip",
+            )
         )
-    elif abs(c1) > 1e-12:
-        x0 = z_star / c1
+        return
 
-        ax.axvline(
-            x0,
-            linewidth=1.4,
-            label=f"Đường mục tiêu tối ưu: z = {z_star:.4g}",
+    p1, p2 = segment
+
+    fig.add_trace(
+        go.Scatter(
+            x=[p1[0], p2[0]],
+            y=[p1[1], p2[1]],
+            mode="lines",
+            name=label,
+            line=dict(width=3),
+            hovertemplate=f"{label}<extra></extra>",
+            showlegend=True,
+        )
+    )
+
+
+def add_feasible_region(
+    fig: go.Figure,
+    vertices: List[Tuple[float, float]],
+):
+    if not vertices:
+        return
+
+    polygon = sort_polygon_vertices(vertices)
+
+    if len(polygon) < 3:
+        return
+
+    xs = [p[0] for p in polygon] + [polygon[0][0]]
+    ys = [p[1] for p in polygon] + [polygon[0][1]]
+
+    fig.add_trace(
+        go.Scatter(
+            x=xs,
+            y=ys,
+            mode="lines",
+            fill="toself",
+            name="Miền chấp nhận được",
+            line=dict(width=1),
+            opacity=0.35,
+            hovertemplate="Miền chấp nhận được<extra></extra>",
+            showlegend=True,
+        )
+    )
+
+
+def add_vertices(
+    fig: go.Figure,
+    vertices: List[Tuple[float, float]],
+):
+    for i, (x1, x2) in enumerate(vertices, start=1):
+        label = f"V{i} = ({fmt_float(x1)}, {fmt_float(x2)})"
+
+        fig.add_trace(
+            go.Scatter(
+                x=[x1],
+                y=[x2],
+                mode="markers",
+                name=label,
+                marker=dict(size=8),
+                hovertemplate=f"{label}<extra></extra>",
+                showlegend=True,
+            )
         )
 
 
-def draw_optimal_solution(
-    ax,
+def add_optimal_solution(
+    fig: go.Figure,
     optimal_info,
 ):
     kind = optimal_info["kind"]
@@ -588,18 +750,22 @@ def draw_optimal_solution(
 
     if kind == "single":
         x_star, y_star = optimal_vertices[0]
+        label = (
+            f"Điểm tối ưu: "
+            f"({fmt_float(x_star)}, {fmt_float(y_star)}), "
+            f"z = {fmt_float(z_star)}"
+        )
 
-        ax.scatter(
-            [x_star],
-            [y_star],
-            s=90,
-            marker="*",
-            zorder=10,
-            label=(
-                f"Điểm tối ưu: "
-                f"({fmt_float(x_star)}, {fmt_float(y_star)}), "
-                f"z = {fmt_float(z_star)}"
-            ),
+        fig.add_trace(
+            go.Scatter(
+                x=[x_star],
+                y=[y_star],
+                mode="markers",
+                name=label,
+                marker=dict(size=14, symbol="star"),
+                hovertemplate=f"{label}<extra></extra>",
+                showlegend=True,
+            )
         )
 
     elif kind == "multiple":
@@ -609,97 +775,27 @@ def draw_optimal_solution(
             p1 = pts[0]
             p2 = pts[-1]
 
-            ax.plot(
-                [p1[0], p2[0]],
-                [p1[1], p2[1]],
-                linewidth=3.0,
-                solid_capstyle="round",
-                label=(
-                    "Đoạn nghiệm tối ưu: "
-                    f"({fmt_float(p1[0])}, {fmt_float(p1[1])})"
-                    " đến "
-                    f"({fmt_float(p2[0])}, {fmt_float(p2[1])}), "
-                    f"z = {fmt_float(z_star)}"
-                ),
+            label = (
+                "Đoạn nghiệm tối ưu: "
+                f"({fmt_float(p1[0])}, {fmt_float(p1[1])})"
+                " đến "
+                f"({fmt_float(p2[0])}, {fmt_float(p2[1])}), "
+                f"z = {fmt_float(z_star)}"
             )
 
-            ax.scatter(
-                [p1[0], p2[0]],
-                [p1[1], p2[1]],
-                s=90,
-                marker="*",
-                zorder=10,
-                label="Hai đầu mút của đoạn nghiệm tối ưu",
+            fig.add_trace(
+                go.Scatter(
+                    x=[p1[0], p2[0]],
+                    y=[p1[1], p2[1]],
+                    mode="lines+markers",
+                    name=label,
+                    line=dict(width=5),
+                    marker=dict(size=12, symbol="star"),
+                    hovertemplate=f"{label}<extra></extra>",
+                    showlegend=True,
+                )
             )
 
-
-def add_vertices_to_plot(
-    ax,
-    vertices: List[Tuple[float, float]],
-):
-    """
-    Đánh dấu các đỉnh của miền chấp nhận được.
-    Tọa độ từng đỉnh được đưa vào legend bên ngoài hình.
-    """
-
-    if not vertices:
-        return
-
-    for i, (x, y) in enumerate(vertices, start=1):
-        ax.scatter(
-            [x],
-            [y],
-            s=32,
-            zorder=6,
-            label=f"V{i} = ({fmt_float(x)}, {fmt_float(y)})",
-        )
-
-
-def remove_duplicate_legend_entries(ax):
-    handles, labels = ax.get_legend_handles_labels()
-    unique = {}
-
-    for h, label in zip(handles, labels):
-        if label not in unique:
-            unique[label] = h
-
-    ax.legend(
-        unique.values(),
-        unique.keys(),
-        loc="best",
-        fontsize=8.5,
-    )
-
-def place_legend_in_separate_axis(fig, legend_ax, plot_ax):
-    """
-    Đặt legend trong một vùng riêng bên phải đồ thị.
-    Loại bỏ các mục không cần thiết khỏi legend.
-    """
-
-    handles, labels = plot_ax.get_legend_handles_labels()
-
-    skip_labels = {
-        "Miền chấp nhận được",
-    }
-
-    unique = {}
-
-    for h, label in zip(handles, labels):
-        if label in skip_labels:
-            continue
-
-        if label not in unique:
-            unique[label] = h
-
-    legend_ax.axis("off")
-
-    legend_ax.legend(
-        unique.values(),
-        unique.keys(),
-        loc="center left",
-        fontsize=9,
-        frameon=True,
-    )
 
 def plot_lp_2d(
     c: Tuple[Number, Number],
@@ -709,68 +805,64 @@ def plot_lp_2d(
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
     title: str = "Giải quy hoạch tuyến tính 2 biến bằng phương pháp hình học",
-    save_path: Optional[str] = None,
     show: bool = True,
     draw_constraint_normals: bool = True,
+    scale_factor: float = 1.35,
+    min_radius: float = 5.0,
 ):
-    """
-    Vẽ bài toán quy hoạch tuyến tính 2 biến bằng phương pháp hình học.
-
-    Legend được đặt ở một vùng riêng bên phải đồ thị.
-    """
-
     full_constraints = add_bound_constraints(constraints, bounds)
     vertices = find_feasible_vertices(full_constraints)
     optimal_info = choose_optimal_set(vertices, c, objective)
 
-    if xlim is None or ylim is None:
-        if vertices:
-            xs = [p[0] for p in vertices]
-            ys = [p[1] for p in vertices]
+    auto_xlim, auto_ylim = auto_equal_limits(
+        constraints=full_constraints,
+        c=c,
+        vertices=vertices,
+        scale_factor=scale_factor,
+        min_radius=min_radius,
+    )
 
-            x_span = max(xs) - min(xs)
-            y_span = max(ys) - min(ys)
+    if xlim is None:
+        xlim = auto_xlim
 
-            if x_span <= 1e-9:
-                x_span = 4
-
-            if y_span <= 1e-9:
-                y_span = 4
-
-            x_pad = max(1, 0.35 * x_span)
-            y_pad = max(1, 0.35 * y_span)
-
-            auto_xlim = (min(xs) - x_pad, max(xs) + x_pad)
-            auto_ylim = (min(ys) - y_pad, max(ys) + y_pad)
-        else:
-            auto_xlim = (-5, 10)
-            auto_ylim = (-5, 10)
-
-        if xlim is None:
-            xlim = auto_xlim
-
-        if ylim is None:
-            ylim = auto_ylim
+    if ylim is None:
+        ylim = auto_ylim
 
     x_min, x_max = xlim
     y_min, y_max = ylim
 
-    fig, (ax, legend_ax) = plt.subplots(
-        1,
-        2,
-        figsize=(13, 7),
-        gridspec_kw={"width_ratios": [4.5, 1.7]},
-    )
+    # Ép hai trục có cùng độ dài số học.
+    # Plotly vẫn cho zoom/pan tương tác, nhưng ban đầu là khung vuông.
+    x_center = 0.5 * (x_min + x_max)
+    y_center = 0.5 * (y_min + y_max)
+    radius = 0.5 * max(x_max - x_min, y_max - y_min)
 
-    arrow_length = 0.028 * max(x_max - x_min, y_max - y_min)
+    x_min = x_center - radius
+    x_max = x_center + radius
+    y_min = y_center - radius
+    y_max = y_center + radius
+
+    fig = go.Figure()
 
     for cons in full_constraints:
-        draw_constraint_line(ax, cons, x_min, x_max, y_min, y_max)
+        add_constraint_trace(
+            fig=fig,
+            cons=cons,
+            x_min=x_min,
+            x_max=x_max,
+            y_min=y_min,
+            y_max=y_max,
+        )
+
+    add_feasible_region(fig, vertices)
+    add_vertices(fig, vertices)
 
     if draw_constraint_normals:
+        arrow_length = 0.045 * max(x_max - x_min, y_max - y_min)
+
         for cons in full_constraints:
-            draw_constraint_normal(
-                ax=ax,
+            add_constraint_normal_arrow(
+                fig=fig,
                 cons=cons,
                 x_min=x_min,
                 x_max=x_max,
@@ -779,25 +871,10 @@ def plot_lp_2d(
                 arrow_length=arrow_length,
             )
 
-    if vertices:
-        polygon = sort_polygon_vertices(vertices)
-
-        if len(polygon) >= 3:
-            poly_arr = np.array(polygon)
-
-            ax.fill(
-                poly_arr[:, 0],
-                poly_arr[:, 1],
-                alpha=0.22,
-                label="Miền chấp nhận được",
-            )
-
-        add_vertices_to_plot(ax, vertices)
-
     z0 = objective_lcm_value(c)
 
-    draw_objective_line_and_normal(
-        ax=ax,
+    add_objective_line_and_arrow(
+        fig=fig,
         c=c,
         objective=objective,
         z0=z0,
@@ -808,8 +885,8 @@ def plot_lp_2d(
     )
 
     if optimal_info["kind"] != "none":
-        draw_optimal_objective_line(
-            ax=ax,
+        add_optimal_objective_line(
+            fig=fig,
             c=c,
             z_star=optimal_info["optimal_value"],
             x_min=x_min,
@@ -818,95 +895,84 @@ def plot_lp_2d(
             y_max=y_max,
         )
 
-        draw_optimal_solution(ax, optimal_info)
+        add_optimal_solution(fig, optimal_info)
 
-    ax.axhline(0, linewidth=0.8)
-    ax.axvline(0, linewidth=0.8)
+    fig.add_hline(y=0, line_width=1)
+    fig.add_vline(x=0, line_width=1)
 
-    ax.set_xlim(x_min, x_max)
-    ax.set_ylim(y_min, y_max)
+    fig.update_layout(
+        title=title,
+        xaxis_title="x1",
+        yaxis_title="x2",
+        width=1050,
+        height=750,
+        hovermode="closest",
+        legend=dict(
+            title="Chú thích",
+            orientation="v",
+            x=1.02,
+            y=1,
+            xanchor="left",
+            yanchor="top",
+        ),
+        margin=dict(l=40, r=300, t=70, b=40),
+        template="plotly_white",
+    )
 
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_title(title)
-    ax.grid(True)
+    fig.update_xaxes(
+        range=[x_min, x_max],
+        zeroline=True,
+        showgrid=True,
+        constrain="domain",
+    )
 
-    ax.set_aspect("equal", adjustable="box")
-
-    place_legend_in_separate_axis(fig, legend_ax, ax)
-
-    plt.tight_layout()
-
-    if save_path is not None:
-        plt.savefig(save_path, dpi=200)
+    fig.update_yaxes(
+        range=[y_min, y_max],
+        zeroline=True,
+        showgrid=True,
+        scaleanchor="x",
+        scaleratio=1,
+    )
 
     if show:
-        plt.show()
+        fig.show()
 
-    if optimal_info["kind"] == "none":
-        return {
-            "status": "không tìm được đỉnh khả thi hữu hạn",
-            "vertices": vertices,
-            "optimal_type": "none",
-            "optimal_vertices": [],
-            "optimal_value": None,
-            "figure": fig,
-            "axis": ax,
-            "legend_axis": legend_ax,
-        }
-
-    if optimal_info["kind"] == "single":
-        return {
-            "status": "có nghiệm tối ưu duy nhất trên các đỉnh hữu hạn tìm được",
-            "vertices": vertices,
-            "optimal_type": "single",
-            "optimal_vertices": optimal_info["optimal_vertices"],
-            "optimal_point": optimal_info["optimal_vertices"][0],
-            "optimal_value": optimal_info["optimal_value"],
-            "figure": fig,
-            "axis": ax,
-            "legend_axis": legend_ax,
-        }
-
-    return {
-        "status": "có vô số nghiệm tối ưu trên một đoạn thẳng",
+    result_base = {
+        "status": None,
         "vertices": vertices,
-        "optimal_type": "multiple",
+        "optimal_type": optimal_info["kind"],
         "optimal_vertices": optimal_info["optimal_vertices"],
-        "optimal_segment": optimal_info["optimal_vertices"],
         "optimal_value": optimal_info["optimal_value"],
         "figure": fig,
-        "axis": ax,
-        "legend_axis": legend_ax,
     }
+
+    if optimal_info["kind"] == "none":
+        result_base["status"] = "không tìm được đỉnh khả thi hữu hạn"
+        return result_base
+
+    if optimal_info["kind"] == "single":
+        result_base["status"] = "có nghiệm tối ưu duy nhất trên các đỉnh hữu hạn tìm được"
+        result_base["optimal_point"] = optimal_info["optimal_vertices"][0]
+        return result_base
+
+    result_base["status"] = "có vô số nghiệm tối ưu trên một đoạn thẳng"
+    result_base["optimal_segment"] = optimal_info["optimal_vertices"]
+    return result_base
 
 
 if __name__ == "__main__":
-    # Ví dụ 1:
-    #
-    # max z = 2x + 3y
-    #
-    # s.t.
-    #   x + y <= 4
-    #   x <= 2
-    #   y <= 3
-    #   x >= 0
-    #   y >= 0
-
     result = plot_lp_2d(
         c=(2, 3),
         objective="max",
         constraints=[
-            Constraint2D(1, 1, "<=", 4, "x + y <= 4"),
-            Constraint2D(1, 0, "<=", 2, "x <= 2"),
-            Constraint2D(0, 1, "<=", 3, "y <= 3"),
+            Constraint2D(1, 1, "<=", 4),
+            Constraint2D(1, 0, "<=", 2),
+            Constraint2D(0, 1, "<=", 3),
         ],
         bounds=(">=0", ">=0"),
-        xlim=(-1, 6),
-        ylim=(-1, 6),
-        title="Ví dụ: max z = 2x + 3y",
-        save_path="lp_2d_example.png",
+        title="Ví dụ: max z = 2x1 + 3x2",
         show=True,
+        draw_constraint_normals=True,
     )
 
     print("Trạng thái:", result["status"])

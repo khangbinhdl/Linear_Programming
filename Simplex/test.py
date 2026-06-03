@@ -19,24 +19,26 @@ def print_result(res):
 def run_case_from_image():
     print("\n################ BÀI TRONG ẢNH ################")
 
-    # max z = 2x1 - 6x2
+    # max z = 4x1 + 5x2
     #
     # s.t.
-    #   -x1 - x2 - x3 <= -2
-    #    2x1 - x2 + x3 <= 1
+    #   2x1 + 2x2 <= 9
+    #    x1  <= 4
+    #    x2  <= 3
     #
-    #   x1, x2, x3 >= 0
+    #   x1, x2 >= 0
 
     solver = SimplexDictionarySolver(
-        c=[2, -6, 0],
+        c=[4, 5],
         objective="max",
         constraints=[
-            Constraint([-1, -1, -1], "<=", -2),
-            Constraint([2, -1, 1], "<=", 1),
+            Constraint([2, 2], "<=", 9),
+            Constraint([1, 0], "<=", 4),
+            Constraint([0, 1], "<=", 3),
         ],
-        bounds=[">=0", ">=0", ">=0"],
-        var_names=["x1", "x2", "x3"],
-        pivot_rule="bland",
+        bounds=[">=0", ">=0"],
+        var_names=["x1", "x2"],
+        pivot_rule="dantzig",
         verbose=True,
     )
 
